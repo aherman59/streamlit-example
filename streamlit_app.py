@@ -1,6 +1,7 @@
 import requests
 import folium
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 from streamlit_folium import st_folium
 
@@ -67,7 +68,26 @@ folium.GeoJson(geojson, name=commune, style_function=style_function).add_to(m)
 
 map = st_folium(m, width=725)
 
-st.subheader("Indicateur")
+st.subheader("Nombre de ventes de logements")
+
+url = f"https://apidf-preprod.cerema.fr/indicateurs/dv3f/communes/annuel/{code_insee}"
+response  = ask(url)
+indicateurs = pd.DataFrame.from_dict(response["results"])
+fig = px.bar(indicateurs, 
+             x='annee', 
+             y=['nbtrans_cod111', 'nbtrans_cod121'], 
+             title = f"Evolution annuelle du nombre de ventes de logements individuels à {commune}", 
+             labels={"annee" : "Année de mutation", 
+                     "value" : "Nombre de ventes",},
+             )
+noms={"nbtrans_cod111": "Maison individuelle", 
+      "nbtrans_cod121": "Appartement individuel"}
+fig.update_layout(legend_title_text="Nombre de ventes")
+fig.for_each_trace(lambda t: t.update(hovertemplate = t.hovertemplate.replace(t.name, noms[t.name]), name=noms[t.name]))
+
+st.plotly_chart(fig, use_container_width=True)
+
+st.subheader("Indicateurs, la suite...")
 
 import numpy as np
 df = pd.DataFrame(
