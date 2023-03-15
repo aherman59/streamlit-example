@@ -41,6 +41,8 @@ commune = st.selectbox("Choix de la commune", [c["nom"] for c in communes])
 
 m = folium.Map(location=[39.949610, -75.150282], zoom_start=16)
 
+map = st_folium(m, width=725)
+
 """
 folium.GeoJson(self.geojson, 
                 name="prix communal", 
