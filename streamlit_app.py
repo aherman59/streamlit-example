@@ -22,9 +22,9 @@ def get_communes(departement):
 
 def style_function(feature):
     return {
-        "fillOpacity": 0.9,
-        "weight": 1,
-        "fillColor": "lightgray",
+        "fillOpacity": 0.1,
+        "weight": 2,
+        "fillColor": "darkred",
         "color": "darkgray",
     }
 
@@ -56,11 +56,22 @@ communes = get_communes([d["code"] for d in departements if d["nom"] == departem
 
 commune = st.selectbox("Choix de la commune", [c["nom"] for c in communes])
 
+st.subheader("Carte de situation")
+
 code_insee = [c["code"] for c in communes if c["nom"] == commune][0] 
 x_center, y_center = get_center(code_insee)
 geojson = get_perimetre(code_insee)
 
-m = folium.Map(location=[y_center, x_center], zoom_start=16)
+m = folium.Map(location=[y_center, x_center], zoom_start=8)
 folium.GeoJson(geojson, name=commune, style_function=style_function).add_to(m)
 
 map = st_folium(m, width=725)
+
+st.subheader("Indicateur")
+
+import numpy as np
+df = pd.DataFrame(
+   np.random.randn(10, 5),
+   columns=('col %d' % i for i in range(5)))
+
+st.table(df)
