@@ -61,10 +61,6 @@ x_center, y_center = get_center(code_insee)
 geojson = get_perimetre(code_insee)
 
 m = folium.Map(location=[y_center, x_center], zoom_start=16)
-folium.GeoJson(geojson, 
-                name=commune, 
-                style_function=style_function, 
-                popup=folium.GeoJsonPopup(fields=["nom",]), 
-                aliases=["nom",]).add_to(m)
+folium.GeoJson(geojson, name=commune, style_function=style_function).add_to(m)
 
 map = st_folium(m, width=725)
