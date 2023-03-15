@@ -4,21 +4,21 @@ import pandas as pd
 import streamlit as st
 from streamlit_folium import st_folium
 
+def ask(url):
+    try:
+        response = requests.get(url)
+        if response.status_code == 200: 
+            return response.json()
+    except Exception as e:
+        return None
+
 def get_departements():
     url = f"https://geo.api.gouv.fr/departements/"
-    response = requests.get(url)
-    if response.status_code == 200:
-        communes = response.json()
-        return communes
-    return None
+    return ask(url)
 
 def get_communes(departement):
     url = f"https://geo.api.gouv.fr/departements/{departement}/communes"
-    response = requests.get(url)
-    if response.status_code == 200:
-        communes = response.json()
-        return communes
-    return None
+    return ask(url)
 
 def style_function(feature):
     return {
@@ -27,6 +27,23 @@ def style_function(feature):
         "fillColor": "lightgray",
         "color": "darkgray",
     }
+
+def get_center(code_insee):
+    url = f"https://geo.api.gouv.fr/communes/{code_insee}/?format=geojson&geometry=bbox"
+    geojson = ask(url)
+    coordinates = geojson["geometry"]["coordinates"][0]
+    xmin = min([x for x, y in coordinates])
+    xmax = max([x for x, y in coordinates])
+    ymin = min([y for x, y in coordinates])
+    ymax = max([y for x, y in coordinates])
+    x_center = xmin + (xmax - xmin)/2.0
+    y_center = ymin + (ymax - ymin)/2.0
+    return x_center, y_center
+
+def get_perimetre(code_insee):
+    url = f"https://geo.api.gouv.fr/communes/{code_insee}/?format=geojson&geometry=contour"
+    return ask(url)
+
 
 
 departements = get_departements()
@@ -39,14 +56,15 @@ communes = get_communes([d["code"] for d in departements if d["nom"] == departem
 
 commune = st.selectbox("Choix de la commune", [c["nom"] for c in communes])
 
-m = folium.Map(location=[39.949610, -75.150282], zoom_start=16)
+code_insee = [c["code"] for c in communes if c["nom"] == commune][0] 
+x_center, y_center = get_center(code_insee)
+geojson = get_perimetre(code_insee)
+
+m = folium.Map(location=[y_center, x_center], zoom_start=16)
+folium.GeoJson(geojson, 
+                name=commune, 
+                style_function=style_function, 
+                popup=folium.GeoJsonPopup(fields=["nom",]), 
+                aliases=["nom",]).add_to(m)
 
 map = st_folium(m, width=725)
-
-"""
-folium.GeoJson(self.geojson, 
-                name="prix communal", 
-                style_function=style_function, 
-                popup=folium.GeoJsonPopup(fields=["nom",] + list(affichage_indics.keys()), 
-                aliases=["nom",] + list(affichage_indics.values()))).add_to(m)
-"""
