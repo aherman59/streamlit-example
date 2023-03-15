@@ -5,7 +5,7 @@ import requests
 def get_communes(departement):
     url = f"https://geo.api.gouv.fr/departements/{departement}/communes"
     response = requests.get(url)
-    if response.code == 200:
+    if response.status_code == 200:
         communes = response.json()
         return communes
     return None
