@@ -1,4 +1,5 @@
 import requests
+import folium
 import pandas as pd
 import streamlit as st
 from streamlit_folium import st_folium
@@ -20,13 +21,12 @@ def get_communes(departement):
     return None
 
 def style_function(feature):
-          value = feature["properties"][indicateur]
-          return {
-            "fillOpacity": 0.9,
-            "weight": 1,
-            "fillColor": colorscale(int(value)) if value > 0 else "lightgray",
-            "color": "darkgray",
-          }
+    return {
+        "fillOpacity": 0.9,
+        "weight": 1,
+        "fillColor": "lightgray",
+        "color": "darkgray",
+    }
 
 
 departements = get_departements()
