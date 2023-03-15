@@ -10,8 +10,11 @@ def get_communes(departement):
         return communes
     return None
 
-st.title("Application test - Commune")
+st.title("Erosion du trait de côte")
 
-st.subheader("Choix de la commune")
+departement = st.selectbox("Choix du département", ["06", "59", "33"])
 
-st.text(get_communes("06"))
+communes = get_communes(departement)
+
+commune = st.selectbox("Choix de la commune", [c["nom"] for c in communes])
+
