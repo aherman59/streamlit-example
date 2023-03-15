@@ -5,4 +5,4 @@ import streamlit as st
 
 st.title("Application test - Commune")
 
-st.subtitle("Choix de la commune")
+st.subheader("Choix de la commune")
