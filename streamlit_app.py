@@ -3,7 +3,7 @@ import streamlit as st
 import requests
 
 def get_departements():
-    url = f"https://geo.api.gouv.fr/departements/{departement}/communes"
+    url = f"https://geo.api.gouv.fr/departements/"
     response = requests.get(url)
     if response.status_code == 200:
         communes = response.json()
