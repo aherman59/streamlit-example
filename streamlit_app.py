@@ -25,7 +25,7 @@ def style_function(feature):
         "fillOpacity": 0.1,
         "weight": 2,
         "fillColor": "darkred",
-        "color": "darkgray",
+        "color": "darkred",
     }
 
 def get_center(code_insee):
@@ -62,7 +62,7 @@ code_insee = [c["code"] for c in communes if c["nom"] == commune][0]
 x_center, y_center = get_center(code_insee)
 geojson = get_perimetre(code_insee)
 
-m = folium.Map(location=[y_center, x_center], zoom_start=8)
+m = folium.Map(location=[y_center, x_center], zoom_start=12)
 folium.GeoJson(geojson, name=commune, style_function=style_function).add_to(m)
 
 map = st_folium(m, width=725)
