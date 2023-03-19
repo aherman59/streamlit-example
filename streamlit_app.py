@@ -49,14 +49,14 @@ def get_perimetre(code_insee):
 
 departements = get_departements()
 
-st.title("Erosion du trait de côte")
 
-departement = st.selectbox("Choix du département", [d["nom"] for d in departements])
+departement = st.sidebar.selectbox("Choix du département", [d["nom"] for d in departements])
 
 communes = get_communes([d["code"] for d in departements if d["nom"] == departement][0])
 
-commune = st.selectbox("Choix de la commune", [c["nom"] for c in communes])
+commune = st.sidebar.selectbox("Choix de la commune", [c["nom"] for c in communes])
 
+st.title("Erosion du trait de côte")
 st.subheader("Carte de situation")
 
 code_insee = [c["code"] for c in communes if c["nom"] == commune][0] 
