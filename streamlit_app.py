@@ -75,6 +75,8 @@ def graphe_nb_ventes(code_insee, commune):
 
 ######
 
+st.set_page_config(page_title="Erosion", page_icon=None, layout="centered",)
+
 departements = get_departements()
 departement = st.sidebar.selectbox("Choix du département", [d["nom"] for d in departements])
 
