@@ -8,7 +8,7 @@ import streamlit as st
 from streamlit_folium import st_folium
 import locale
 
-locale.setlocale(locale.LC_ALL, 'fr_FR')
+#locale.setlocale(locale.LC_ALL, 'fr_FR')
 
 ####
 
