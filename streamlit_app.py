@@ -306,15 +306,14 @@ with tab_aav:
     st.dataframe(taux_rotation(perimetre), use_container_width=True)
 
 with tab_dep:
-    st.header(f"Départements")
 
     departements_dep = get_departements(perimetre)
-    departement_dep = st.selectbox("Choix", [d["nom"] for d in departements_dep])
+    departement_dep = st.selectbox("Choix d'un département", [d["nom"] for d in departements_dep])
 
     code_dep = [d["code"] for d in departements_dep if d["nom"] == departement_dep][0]
 
     with st.spinner("Chargement..."):
-        st.header(f"Principaux chiffres - Bande {perimetre}")
+        st.header(f"{departement_dep} - Bande {perimetre}")
         col21, col22 = st.columns(2)
         with col21:
             st.metric("Nombre de logements", get("nb_logt", code_dep, perimetre, "iddep"),)
