@@ -85,16 +85,17 @@ def carto_aav(ratio, perimetre):
                            """, 
                            con=conn, 
                            dtype={"aav2020": str})
+    df["comparaison_base_100"] = df["ratio"].apply(lambda x: round(x*100, 1) if x <= 1 else round(100/(2 - x), 1))
 
-    fig = px.choropleth_mapbox(df, geojson=aav, locations='aav2020', color="ratio",
+    fig = px.choropleth_mapbox(df, geojson=aav, locations='aav2020', color="comparaison_base_100",
                             color_continuous_scale="tropic",
-                            range_color=(0.5, 1.5),
+                            range_color=(50, 150),
                             mapbox_style="carto-positron",
                             zoom=5, center = {"lat": 50, "lon": 3},
                             opacity=0.7,
                             #mapbox_style="open-street-map",
                             hover_name="libaav2020",
-                            labels={"ratio":'Ratio'}
+                            labels={"comparaison_base_100":"Pourcentage", "aav2020": "Code AAV"}
                             )
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return fig
@@ -103,8 +104,8 @@ def taux_rotation(perimetre):
     seuil = perimetre[:-1]
     df = pd.read_sql_query(f"""
                            SELECT libaav2020 AS "Nom AAV", 
-                                tx_rotation_impact * 100 AS "Taux rotation dans la zone", 
-                                tx_rotation_non_impact * 100 AS "Taux rotation hors zone"
+                                cast(tx_rotation_impact * 100.0 As text) || ' %' AS "Taux rotation dans la zone", 
+                                cast(tx_rotation_non_impact * 100.0 As text) || ' %' AS "Taux rotation hors zone"
                            FROM indicateurs_aav 
                            WHERE seuil_frange={seuil};
                            """, 
@@ -255,7 +256,7 @@ st.set_page_config(page_title="Erosion", page_icon=None, layout="wide",)
 st.title("Erosion du trait de côte")
 
 perimetres = ["200m", "1000m", "10000m"]
-perimetre = st.select_slider("Choix de la distance au littoral (limite terre-mer)", perimetres)
+perimetre = st.selectbox("Choix de la distance au littoral (limite terre-mer)", perimetres)
 
 
 tab_comm, tab_dep, tab_aav = st.tabs(["Commune", "Département", "AAV"])
@@ -265,14 +266,35 @@ with tab_aav:
 
     st.subheader("Comparaison des niveaux de prix")
 
+    st.markdown("""
+    Pour les maisons moyennes et les appartements 3/4 pièces,
+    une comparaison du prix médian dans la bande littorale par rapport 
+    au prix médian dans chaque territoire de référence (Aire d'Attration des Villes)
+     est proposée.""")
+
+
     with st.spinner("Chargement..."):
         col_carto_aav_mai, col_carto_aav_apt = st.columns(2)
         with col_carto_aav_mai:
+            st.subheader("Maisons moyennes (90-130 m2)")
             st.plotly_chart(carto_aav("valeur_ratio_2021_maison", perimetre), use_container_width=True)
         with col_carto_aav_apt:
+            st.subheader("Appartements 3/4 pièces")
             st.plotly_chart(carto_aav("valeur_ratio_2021_appt", perimetre), use_container_width=True)
         
+    st.markdown("""
+    *Interprétation : si le ratio calculé à 200 m vaut 122 % 
+    pour les maisons moyennes de l'AAV de Vannes, cela signifie, que les
+    biens situés dans la zone littorale des 200 m sur cette AAV sont 1,22 fois 
+    plus chers que ceux du même AAV à l'extérieur de cette zone.*
+    """)
+
+
     st.subheader("Taux de rotation du parc privé")
+    st.markdown("""
+    Les taux de rotation proposés correspondent au nombre de logements privés ayant muté entre 2019 et 2021 
+    divisé par la taille du parc de logements privés en 2019 dans les zone impactées et non impactées.  
+     """)
 
     st.dataframe(taux_rotation(perimetre), use_container_width=True)
 
@@ -320,7 +342,7 @@ with tab_comm:
             st.metric("Surface urbanisée",get("surfaces_urba", code_insee, perimetre) + " m2",)
         with col22:
             st.metric("Nombre de locaux d'activité", get("nb_loc_act", code_insee, perimetre),)
-            st.metric("Estimation des locaux d'activité", "-- €",)
+            st.metric("Estimation bureaux/commerces",get("estim_bur_com", code_insee, perimetre) + " €")
             st.metric("Surface NAF", get("surfaces_naf", code_insee, perimetre) + " m2",)
 
     st.header("Enjeux impactés")
@@ -370,6 +392,6 @@ with tab_comm:
         st.subheader("Estimation des locaux d'activité")
         col_estim_bureau, col_estim_commerce = st.columns(2, gap="large")
         with col_estim_bureau:
-            st.metric("Bureaux", " -- €")
+            st.metric("Bureaux", get("estimation_bureaux", code_insee, perimetre) + " €",)
         with col_estim_commerce:
-            st.metric("Commerces", "-- €")
+            st.metric("Commerces", get("estimation_commerces", code_insee, perimetre) + " €",)
