@@ -107,6 +107,41 @@ def carto_aav(ratio, perimetre):
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return fig
 
+def graphe_aav(type, perimetre):
+    seuil = perimetre[:-1]
+    df = pd.read_sql_query(f"""
+                        SELECT aav2020, libaav2020, '2015' AS annee,  
+                        valeur_ratio_2015_{type} AS ratio
+                        FROM indicateurs_aav 
+                        WHERE seuil_frange={seuil}
+                        
+                        UNION
+                        
+                        SELECT aav2020, libaav2020, '2018' AS annee,  
+                        valeur_ratio_2018_{type} AS ratio
+                        FROM indicateurs_aav 
+                        WHERE seuil_frange={seuil}
+
+                        UNION
+                        
+                        SELECT aav2020, libaav2020, '2021' AS annee,  
+                        valeur_ratio_2021_{type} AS ratio
+                        FROM indicateurs_aav 
+                        WHERE seuil_frange={seuil}
+
+                    ORDER BY aav2020 DESC 
+                        """, con=conn, dtype={"aav2020": str})
+
+    df["base_100"] = df["ratio"].apply(lambda x: round(x*100, 1) if x <= 1 else round(100/(2 - x), 1))
+    fig = px.scatter(df, y="libaav2020", x="base_100", color="annee")
+    fig.add_vrect(x0="100", x1="200", 
+                annotation_text="Valeurs foncières supérieures au sein la bande", annotation_position="top left",
+                fillcolor="tomato", opacity=0.25, line_width=0)
+    fig.update_layout(height=4000)
+    fig.update_layout(title_text="Situation des prix des dans la bande par rapport à l'AAV")
+    return fig
+
+
 def taux_rotation(perimetre):
     seuil = perimetre[:-1]
     df = pd.read_sql_query(f"""
@@ -271,7 +306,7 @@ tab_comm, tab_dep, tab_aav = st.tabs(["Commune", "Département", "AAV"])
 with tab_aav:
     st.header(f"Aires d'attraction des villes")
 
-    st.subheader("Comparaison des niveaux de prix")
+    st.subheader("Comparaison des niveaux de prix en 2021")
 
     st.markdown("""
     Pour les maisons moyennes et les appartements 3/4 pièces,
@@ -296,6 +331,16 @@ with tab_aav:
     plus chers que ceux du même AAV à l'extérieur de cette zone.*
     """)
 
+    st.subheader("Evolution des niveaux de prix par AAV de 2015 à 2021")
+
+    with st.spinner("Chargement..."):
+        col_graphe_aav_mai, col_graphe_aav_apt = st.columns(2)
+        with col_graphe_aav_mai:
+            st.subheader("Maisons moyennes (90-130 m2)")
+            st.plotly_chart(graphe_aav("maison", perimetre), use_container_width=True)
+        with col_graphe_aav_apt:
+            st.subheader("Appartements 3/4 pièces")
+            st.plotly_chart(graphe_aav("appt", perimetre), use_container_width=True)
 
     st.subheader("Taux de rotation du parc privé")
     st.markdown("""
