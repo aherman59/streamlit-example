@@ -164,7 +164,7 @@ def graphe_occupation_parc(code_insee, perimetre, id="idcom"):
         get("nb_logt_va", code_insee, perimetre, id=id),
     ]
     fig = go.Figure([go.Bar(x=type_occupation, y=valeurs)])
-    fig.update_layout(title_text="Nombre de logements impactés en fonction de leur occupation")
+    fig.update_layout(title_text="Nombre de logements concernés en fonction de leur occupation")
     return fig
 
 def graphe_age_parc(code_insee, perimetre, id='idcom'):
@@ -191,7 +191,7 @@ def graphe_age_parc(code_insee, perimetre, id='idcom'):
             go.Bar(x=type_occupation, y=valeurs_maison, name="Maison"),
             go.Bar(x=type_occupation, y=valeurs_appartement, name="Appartements"),
                      ])
-    fig.update_layout(title_text = "Nombre de logements impactés en fonction de leur période de construction")
+    fig.update_layout(title_text = "Nombre de logements concernés en fonction de leur période de construction")
     return fig
 
 def graphe_foncier(code_insee, perimetre, id="idcom"):
@@ -293,9 +293,9 @@ def get_perimetre(code_insee):
 
 ######
 
-st.set_page_config(page_title="Erosion", page_icon=None, layout="wide",)
+st.set_page_config(page_title="Enjeux littoraux", page_icon=None, layout="wide",)
 
-st.title("Erosion du trait de côte")
+st.title("Evaluation économique sur le littoral")
 
 perimetres = ["200m", "1000m", "10000m"]
 perimetre = st.selectbox("Choix de la distance au littoral (limite terre-mer)", perimetres)
@@ -345,7 +345,7 @@ with tab_aav:
     st.subheader("Taux de rotation du parc privé")
     st.markdown("""
     Les taux de rotation proposés correspondent au nombre de logements privés ayant muté entre 2019 et 2021 
-    divisé par la taille du parc de logements privés en 2019 dans les zone impactées et non impactées.  
+    divisé par la taille du parc de logements privés en 2019 dans les zones concernées et non concernées.  
      """)
 
     st.dataframe(taux_rotation(perimetre), use_container_width=True)
@@ -369,7 +369,7 @@ with tab_dep:
             st.metric("Estimation bureaux/commerces",get("estim_bur_com", code_dep, perimetre, "iddep") + " €")
             st.metric("Surface NAF", get("surfaces_naf", code_dep, perimetre, "iddep") + " m2",)
 
-    st.header("Enjeux impactés")
+    st.header("Enjeux concernées")
 
     with st.spinner("Chargement..."):
         st.subheader("Logement")
@@ -403,13 +403,15 @@ with tab_dep:
 
     with st.spinner("Chargement..."):
         st.subheader("Estimation des logements")
-        col_estim_dep, col_mai_dep, col_apt_dep = st.columns(3, gap="large")
+        col_estim_dep, col_mai_dep, col_apt_dep, col_loyer_dep = st.columns(4, gap="large")
         with col_estim_dep:
             st.metric("Ensemble des logements",get("estim_logt", code_dep, perimetre, "iddep") + " €")
         with col_mai_dep:
             st.metric("Maisons",get("estim_maisons", code_dep, perimetre, "iddep") + " €",)
         with col_apt_dep:
             st.metric("Appartements",get("estim_appts", code_dep, perimetre, "iddep") + " €",)
+        with col_loyer_dep:
+            st.metric("Estimation des loyers percus",get("estim_loyer", code_dep, perimetre, "iddep") + " €/mois",)
 
         st.plotly_chart(graphe_estimation_logement_taille(code_dep, perimetre, "iddep"), use_container_width=True)
 
@@ -462,7 +464,7 @@ with tab_comm:
             st.metric("Estimation bureaux/commerces",get("estim_bur_com", code_insee, perimetre) + " €")
             st.metric("Surface NAF", get("surfaces_naf", code_insee, perimetre) + " m2",)
 
-    st.header("Enjeux impactés")
+    st.header("Enjeux intersectés")
 
     with st.spinner("Chargement..."):
         st.subheader("Logement")
@@ -496,13 +498,15 @@ with tab_comm:
 
     with st.spinner("Chargement..."):
         st.subheader("Estimation des logements")
-        col_estim, col_mai, col_apt = st.columns(3, gap="large")
+        col_estim, col_mai, col_apt, col_loyer = st.columns(4, gap="large")
         with col_estim:
             st.metric("Ensemble des logements",get("estim_logt", code_insee, perimetre) + " €")
         with col_mai:
             st.metric("Maisons",get("estim_maisons", code_insee, perimetre) + " €",)
         with col_apt:
             st.metric("Appartements",get("estim_appts", code_insee, perimetre) + " €",)
+        with col_loyer:
+            st.metric("Estimation des loyers percus",get("estim_loyer", code_insee, perimetre) + " €/mois",)
 
         st.plotly_chart(graphe_estimation_logement_taille(code_insee, perimetre), use_container_width=True)
 
