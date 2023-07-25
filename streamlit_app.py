@@ -297,222 +297,248 @@ st.set_page_config(page_title="Enjeux littoraux", page_icon=None, layout="wide",
 
 st.title("Evaluation économique sur le littoral")
 
-perimetres = ["200m", "1000m", "10000m"]
-perimetre = st.selectbox("Choix de la distance au littoral (limite terre-mer)", perimetres)
+
+def password_entered():
+    if st.session_state["password"] == st.secrets["password"]:
+        st.session_state["password_correct"] = True
+        st.session_state["password"] = None  # don't store password
+    else:
+        st.session_state["password_correct"] = False
 
 
-tab_comm, tab_dep, tab_aav = st.tabs(["Commune", "Département", "AAV"])
-
-with tab_aav:
-    st.header(f"Aires d'attraction des villes")
-
-    st.subheader("Comparaison des niveaux de prix en 2021")
-
-    st.markdown("""
-    Pour les maisons moyennes et les appartements 3/4 pièces,
-    une comparaison du prix médian dans la bande littorale par rapport 
-    au prix médian dans chaque territoire de référence (Aire d'Attration des Villes)
-     est proposée.""")
-
-
-    with st.spinner("Chargement..."):
-        col_carto_aav_mai, col_carto_aav_apt = st.columns(2)
-        with col_carto_aav_mai:
-            st.subheader("Maisons moyennes (90-130 m2)")
-            st.plotly_chart(carto_aav("valeur_ratio_2021_maison", perimetre), use_container_width=True)
-        with col_carto_aav_apt:
-            st.subheader("Appartements 3/4 pièces")
-            st.plotly_chart(carto_aav("valeur_ratio_2021_appt", perimetre), use_container_width=True)
-        
-    st.markdown("""
-    *Interprétation : si le ratio calculé à 200 m vaut 122 % 
-    pour les maisons moyennes de l'AAV de Vannes, cela signifie, que les
-    biens situés dans la zone littorale des 200 m sur cette AAV sont 1,22 fois 
-    plus chers que ceux du même AAV à l'extérieur de cette zone.*
-    """)
-
-    st.subheader("Evolution des niveaux de prix par AAV de 2015 à 2021")
-
-    with st.spinner("Chargement..."):
-        col_graphe_aav_mai, col_graphe_aav_apt = st.columns(2)
-        with col_graphe_aav_mai:
-            st.subheader("Maisons moyennes (90-130 m2)")
-            st.plotly_chart(graphe_aav("maison", perimetre), use_container_width=True)
-        with col_graphe_aav_apt:
-            st.subheader("Appartements 3/4 pièces")
-            st.plotly_chart(graphe_aav("appt", perimetre), use_container_width=True)
-
-    st.subheader("Taux de rotation du parc privé")
-    st.markdown("""
-    Les taux de rotation proposés correspondent au nombre de logements privés ayant muté entre 2019 et 2021 
-    divisé par la taille du parc de logements privés en 2019 dans les zones concernées et non concernées.  
-     """)
-
-    st.dataframe(taux_rotation(perimetre), use_container_width=True)
-
-with tab_dep:
-
-    departements_dep = get_departements(perimetre)
-    departement_dep = st.selectbox("Choix d'un département", [d["nom"] for d in departements_dep])
-
-    code_dep = [d["code"] for d in departements_dep if d["nom"] == departement_dep][0]
-
-    with st.spinner("Chargement..."):
-        st.header(f"{departement_dep} - Bande {perimetre}")
-        col21, col22 = st.columns(2)
-        with col21:
-            st.metric("Nombre de logements", get("nb_logt", code_dep, perimetre, "iddep"),)
-            st.metric("Estimation des logements",get("estim_logt", code_dep, perimetre, "iddep") + " €")
-            st.metric("Surface urbanisée",get("surfaces_urba", code_dep, perimetre, "iddep") + " m2",)
-        with col22:
-            st.metric("Nombre de locaux d'activité", get("nb_loc_act", code_dep, perimetre, "iddep"),)
-            st.metric("Estimation bureaux/commerces",get("estim_bur_com", code_dep, perimetre, "iddep") + " €")
-            st.metric("Surface NAF", get("surfaces_naf", code_dep, perimetre, "iddep") + " m2",)
-
-    st.header("Enjeux concernées")
-
-    with st.spinner("Chargement..."):
-        st.subheader("Logement")
-        col_occ_dep, col_cstr_dep = st.columns(2, gap="large")
-        with col_occ_dep:
-            st.plotly_chart(graphe_occupation_parc(code_dep, perimetre, "iddep"), use_container_width=True)
-        with col_cstr_dep:
-            st.plotly_chart(graphe_age_parc(code_dep, perimetre, "iddep"), use_container_width=True)
-
-        col_foncier_dep, col_act_dep = st.columns(2, gap="large")
-        with col_foncier_dep: 
-            st.subheader("Foncier")
-            st.plotly_chart(graphe_foncier(code_dep, perimetre, "iddep"), use_container_width=True)
-        with col_act_dep:
-            st.subheader("Activité")
-            col_hotel_dep, col_camping_dep = st.columns(2)
-            with col_hotel_dep:
-                st.metric("Hotels", get("nb_hotels", code_dep, perimetre, "iddep"),)
-            with col_camping_dep:
-                st.metric("Campings", get("nb_campings", code_dep, perimetre, "iddep"),)
-
-            col_commerce_dep, col_bureau_dep = st.columns(2)
-            with col_commerce_dep:
-                st.metric("Commerces", get("nb_commerces", code_dep, perimetre, 'iddep'),)
-            with col_bureau_dep:
-                st.metric("Locaux de bureau", get("nb_bureaux", code_dep, perimetre, 'iddep'),)
-            
-            st.metric("Autres locaux d'activité", get("nb_act_autres", code_dep, perimetre, 'iddep'),)
-
-    st.header("Estimation des biens")
-
-    with st.spinner("Chargement..."):
-        st.subheader("Estimation des logements")
-        col_estim_dep, col_mai_dep, col_apt_dep, col_loyer_dep = st.columns(4, gap="large")
-        with col_estim_dep:
-            st.metric("Ensemble des logements",get("estim_logt", code_dep, perimetre, "iddep") + " €")
-        with col_mai_dep:
-            st.metric("Maisons",get("estim_maisons", code_dep, perimetre, "iddep") + " €",)
-        with col_apt_dep:
-            st.metric("Appartements",get("estim_appts", code_dep, perimetre, "iddep") + " €",)
-        with col_loyer_dep:
-            st.metric("Estimation des loyers percus",get("estim_loyer", code_dep, perimetre, "iddep") + " €/mois",)
-
-        st.plotly_chart(graphe_estimation_logement_taille(code_dep, perimetre, "iddep"), use_container_width=True)
-
-        st.subheader("Estimation des locaux d'activité")
-        col_estim_bureau_dep, col_estim_commerce_dep = st.columns(2, gap="large")
-        with col_estim_bureau_dep:
-            st.metric("Bureaux", get("estimation_bureaux", code_dep, perimetre, "iddep") + " €",)
-        with col_estim_commerce_dep:
-            st.metric("Commerces", get("estimation_commerces", code_dep, perimetre, "iddep") + " €",)
+def check_password():
+    if "password_correct" not in st.session_state:
+        st.text_input(
+            "Password", type="password", on_change=password_entered, key="password"
+        )
+        return False
+    elif not st.session_state["password_correct"]:
+        st.text_input(
+            "Password", type="password", on_change=password_entered, key="password"
+        )
+        st.error("😕 Password incorrect")
+        return False
+    else:
+        return True
 
 
-with tab_comm:
+if check_password():
+    perimetres = ["200m", "1000m", "10000m"]
+    perimetre = st.selectbox("Choix de la distance au littoral (limite terre-mer)", perimetres)
 
-    col_dep, col_com = st.columns(2)
-    
-    with col_dep:
-        departements = get_departements(perimetre)
-        departement = st.selectbox("Choix du département", [d["nom"] for d in departements])
 
-    coddep = [d["code"] for d in departements if d["nom"] == departement][0]
+    tab_comm, tab_dep, tab_aav = st.tabs(["Commune", "Département", "AAV"])
 
-    with col_com:
-        communes = get_communes(coddep, perimetre)
-        commune = st.selectbox("Choix de la commune", [c["nom"] for c in communes])
+    with tab_aav:
+        st.header(f"Aires d'attraction des villes")
 
-    code_insee = [c["code"] for c in communes if c["nom"] == commune][0] 
+        st.subheader("Comparaison des niveaux de prix en 2021")
 
-    col1, col2 = st.columns(2, gap="large")
+        st.markdown("""
+        Pour les maisons moyennes et les appartements 3/4 pièces,
+        une comparaison du prix médian dans la bande littorale par rapport 
+        au prix médian dans chaque territoire de référence (Aire d'Attration des Villes)
+        est proposée.""")
 
-    with col1: 
-        st.header(f"Carte de situation - {commune}")
-        # Carte
+
         with st.spinner("Chargement..."):
-            x_center, y_center = get_center(code_insee)
-            geojson = get_perimetre(code_insee)
-            m = folium.Map(location=[y_center, x_center], zoom_start=10)
-            folium.GeoJson(geojson, name=commune, style_function=style_perimetre).add_to(m)
-            # folium.GeoJson(json.loads(open(f"bande_200_d{code_dep}.geojson").read()), name="frange", style_function=style_recul).add_to(m)
-            map = st_folium(m, width=500, height=400)
-
-    with col2:
-        st.header(f"Principaux chiffres - Bande {perimetre}")
-        col21, col22 = st.columns(2)
-        with col21:
-            st.metric("Nombre de logements", get("nb_logt", code_insee, perimetre),)
-            st.metric("Estimation des logements",get("estim_logt", code_insee, perimetre) + " €")
-            st.metric("Surface urbanisée",get("surfaces_urba", code_insee, perimetre) + " m2",)
-        with col22:
-            st.metric("Nombre de locaux d'activité", get("nb_loc_act", code_insee, perimetre),)
-            st.metric("Estimation bureaux/commerces",get("estim_bur_com", code_insee, perimetre) + " €")
-            st.metric("Surface NAF", get("surfaces_naf", code_insee, perimetre) + " m2",)
-
-    st.header("Enjeux intersectés")
-
-    with st.spinner("Chargement..."):
-        st.subheader("Logement")
-        col_occ, col_cstr = st.columns(2, gap="large")
-        with col_occ:
-            st.plotly_chart(graphe_occupation_parc(code_insee, perimetre), use_container_width=True)
-        with col_cstr:
-            st.plotly_chart(graphe_age_parc(code_insee, perimetre), use_container_width=True)
-
-        col_foncier, col_act = st.columns(2, gap="large")
-        with col_foncier: 
-            st.subheader("Foncier")
-            st.plotly_chart(graphe_foncier(code_insee, perimetre), use_container_width=True)
-        with col_act:
-            st.subheader("Activité")
-            col_hotel, col_camping = st.columns(2)
-            with col_hotel:
-                st.metric("Hotels", get("nb_hotels", code_insee, perimetre),)
-            with col_camping:
-                st.metric("Campings", get("nb_campings", code_insee, perimetre),)
-
-            col_commerce, col_bureau = st.columns(2)
-            with col_commerce:
-                st.metric("Commerces", get("nb_commerces", code_insee, perimetre),)
-            with col_bureau:
-                st.metric("Locaux de bureau", get("nb_bureaux", code_insee, perimetre),)
+            col_carto_aav_mai, col_carto_aav_apt = st.columns(2)
+            with col_carto_aav_mai:
+                st.subheader("Maisons moyennes (90-130 m2)")
+                st.plotly_chart(carto_aav("valeur_ratio_2021_maison", perimetre), use_container_width=True)
+            with col_carto_aav_apt:
+                st.subheader("Appartements 3/4 pièces")
+                st.plotly_chart(carto_aav("valeur_ratio_2021_appt", perimetre), use_container_width=True)
             
-            st.metric("Autres locaux d'activité", get("nb_act_autres", code_insee, perimetre),)
+        st.markdown("""
+        *Interprétation : si le ratio calculé à 200 m vaut 122 % 
+        pour les maisons moyennes de l'AAV de Vannes, cela signifie, que les
+        biens situés dans la zone littorale des 200 m sur cette AAV sont 1,22 fois 
+        plus chers que ceux du même AAV à l'extérieur de cette zone.*
+        """)
 
-    st.header("Estimation des biens")
+        st.subheader("Evolution des niveaux de prix par AAV de 2015 à 2021")
 
-    with st.spinner("Chargement..."):
-        st.subheader("Estimation des logements")
-        col_estim, col_mai, col_apt, col_loyer = st.columns(4, gap="large")
-        with col_estim:
-            st.metric("Ensemble des logements",get("estim_logt", code_insee, perimetre) + " €")
-        with col_mai:
-            st.metric("Maisons",get("estim_maisons", code_insee, perimetre) + " €",)
-        with col_apt:
-            st.metric("Appartements",get("estim_appts", code_insee, perimetre) + " €",)
-        with col_loyer:
-            st.metric("Estimation des loyers percus",get("estim_loyer", code_insee, perimetre) + " €/mois",)
+        with st.spinner("Chargement..."):
+            col_graphe_aav_mai, col_graphe_aav_apt = st.columns(2)
+            with col_graphe_aav_mai:
+                st.subheader("Maisons moyennes (90-130 m2)")
+                st.plotly_chart(graphe_aav("maison", perimetre), use_container_width=True)
+            with col_graphe_aav_apt:
+                st.subheader("Appartements 3/4 pièces")
+                st.plotly_chart(graphe_aav("appt", perimetre), use_container_width=True)
 
-        st.plotly_chart(graphe_estimation_logement_taille(code_insee, perimetre), use_container_width=True)
+        st.subheader("Taux de rotation du parc privé")
+        st.markdown("""
+        Les taux de rotation proposés correspondent au nombre de logements privés ayant muté entre 2019 et 2021 
+        divisé par la taille du parc de logements privés en 2019 dans les zones concernées et non concernées.  
+        """)
 
-        st.subheader("Estimation des locaux d'activité")
-        col_estim_bureau, col_estim_commerce = st.columns(2, gap="large")
-        with col_estim_bureau:
-            st.metric("Bureaux", get("estimation_bureaux", code_insee, perimetre) + " €",)
-        with col_estim_commerce:
-            st.metric("Commerces", get("estimation_commerces", code_insee, perimetre) + " €",)
+        st.dataframe(taux_rotation(perimetre), use_container_width=True)
+
+    with tab_dep:
+
+        departements_dep = get_departements(perimetre)
+        departement_dep = st.selectbox("Choix d'un département", [d["nom"] for d in departements_dep])
+
+        code_dep = [d["code"] for d in departements_dep if d["nom"] == departement_dep][0]
+
+        with st.spinner("Chargement..."):
+            st.header(f"{departement_dep} - Bande {perimetre}")
+            col21, col22 = st.columns(2)
+            with col21:
+                st.metric("Nombre de logements", get("nb_logt", code_dep, perimetre, "iddep"),)
+                st.metric("Estimation des logements",get("estim_logt", code_dep, perimetre, "iddep") + " €")
+                st.metric("Surface urbanisée",get("surfaces_urba", code_dep, perimetre, "iddep") + " m2",)
+            with col22:
+                st.metric("Nombre de locaux d'activité", get("nb_loc_act", code_dep, perimetre, "iddep"),)
+                st.metric("Estimation bureaux/commerces",get("estim_bur_com", code_dep, perimetre, "iddep") + " €")
+                st.metric("Surface NAF", get("surfaces_naf", code_dep, perimetre, "iddep") + " m2",)
+
+        st.header("Enjeux concernées")
+
+        with st.spinner("Chargement..."):
+            st.subheader("Logement")
+            col_occ_dep, col_cstr_dep = st.columns(2, gap="large")
+            with col_occ_dep:
+                st.plotly_chart(graphe_occupation_parc(code_dep, perimetre, "iddep"), use_container_width=True)
+            with col_cstr_dep:
+                st.plotly_chart(graphe_age_parc(code_dep, perimetre, "iddep"), use_container_width=True)
+
+            col_foncier_dep, col_act_dep = st.columns(2, gap="large")
+            with col_foncier_dep: 
+                st.subheader("Foncier")
+                st.plotly_chart(graphe_foncier(code_dep, perimetre, "iddep"), use_container_width=True)
+            with col_act_dep:
+                st.subheader("Activité")
+                col_hotel_dep, col_camping_dep = st.columns(2)
+                with col_hotel_dep:
+                    st.metric("Hotels", get("nb_hotels", code_dep, perimetre, "iddep"),)
+                with col_camping_dep:
+                    st.metric("Campings", get("nb_campings", code_dep, perimetre, "iddep"),)
+
+                col_commerce_dep, col_bureau_dep = st.columns(2)
+                with col_commerce_dep:
+                    st.metric("Commerces", get("nb_commerces", code_dep, perimetre, 'iddep'),)
+                with col_bureau_dep:
+                    st.metric("Locaux de bureau", get("nb_bureaux", code_dep, perimetre, 'iddep'),)
+                
+                st.metric("Autres locaux d'activité", get("nb_act_autres", code_dep, perimetre, 'iddep'),)
+
+        st.header("Estimation des biens")
+
+        with st.spinner("Chargement..."):
+            st.subheader("Estimation des logements")
+            col_estim_dep, col_mai_dep, col_apt_dep, col_loyer_dep = st.columns(4, gap="large")
+            with col_estim_dep:
+                st.metric("Ensemble des logements",get("estim_logt", code_dep, perimetre, "iddep") + " €")
+            with col_mai_dep:
+                st.metric("Maisons",get("estim_maisons", code_dep, perimetre, "iddep") + " €",)
+            with col_apt_dep:
+                st.metric("Appartements",get("estim_appts", code_dep, perimetre, "iddep") + " €",)
+            with col_loyer_dep:
+                st.metric("Estimation des loyers percus",get("estim_loyer", code_dep, perimetre, "iddep") + " €/mois",)
+
+            st.plotly_chart(graphe_estimation_logement_taille(code_dep, perimetre, "iddep"), use_container_width=True)
+
+            st.subheader("Estimation des locaux d'activité")
+            col_estim_bureau_dep, col_estim_commerce_dep = st.columns(2, gap="large")
+            with col_estim_bureau_dep:
+                st.metric("Bureaux", get("estimation_bureaux", code_dep, perimetre, "iddep") + " €",)
+            with col_estim_commerce_dep:
+                st.metric("Commerces", get("estimation_commerces", code_dep, perimetre, "iddep") + " €",)
+
+
+    with tab_comm:
+
+        col_dep, col_com = st.columns(2)
+        
+        with col_dep:
+            departements = get_departements(perimetre)
+            departement = st.selectbox("Choix du département", [d["nom"] for d in departements])
+
+        coddep = [d["code"] for d in departements if d["nom"] == departement][0]
+
+        with col_com:
+            communes = get_communes(coddep, perimetre)
+            commune = st.selectbox("Choix de la commune", [c["nom"] for c in communes])
+
+        code_insee = [c["code"] for c in communes if c["nom"] == commune][0] 
+
+        col1, col2 = st.columns(2, gap="large")
+
+        with col1: 
+            st.header(f"Carte de situation - {commune}")
+            # Carte
+            with st.spinner("Chargement..."):
+                x_center, y_center = get_center(code_insee)
+                geojson = get_perimetre(code_insee)
+                m = folium.Map(location=[y_center, x_center], zoom_start=10)
+                folium.GeoJson(geojson, name=commune, style_function=style_perimetre).add_to(m)
+                # folium.GeoJson(json.loads(open(f"bande_200_d{code_dep}.geojson").read()), name="frange", style_function=style_recul).add_to(m)
+                map = st_folium(m, width=500, height=400)
+
+        with col2:
+            st.header(f"Principaux chiffres - Bande {perimetre}")
+            col21, col22 = st.columns(2)
+            with col21:
+                st.metric("Nombre de logements", get("nb_logt", code_insee, perimetre),)
+                st.metric("Estimation des logements",get("estim_logt", code_insee, perimetre) + " €")
+                st.metric("Surface urbanisée",get("surfaces_urba", code_insee, perimetre) + " m2",)
+            with col22:
+                st.metric("Nombre de locaux d'activité", get("nb_loc_act", code_insee, perimetre),)
+                st.metric("Estimation bureaux/commerces",get("estim_bur_com", code_insee, perimetre) + " €")
+                st.metric("Surface NAF", get("surfaces_naf", code_insee, perimetre) + " m2",)
+
+        st.header("Enjeux intersectés")
+
+        with st.spinner("Chargement..."):
+            st.subheader("Logement")
+            col_occ, col_cstr = st.columns(2, gap="large")
+            with col_occ:
+                st.plotly_chart(graphe_occupation_parc(code_insee, perimetre), use_container_width=True)
+            with col_cstr:
+                st.plotly_chart(graphe_age_parc(code_insee, perimetre), use_container_width=True)
+
+            col_foncier, col_act = st.columns(2, gap="large")
+            with col_foncier: 
+                st.subheader("Foncier")
+                st.plotly_chart(graphe_foncier(code_insee, perimetre), use_container_width=True)
+            with col_act:
+                st.subheader("Activité")
+                col_hotel, col_camping = st.columns(2)
+                with col_hotel:
+                    st.metric("Hotels", get("nb_hotels", code_insee, perimetre),)
+                with col_camping:
+                    st.metric("Campings", get("nb_campings", code_insee, perimetre),)
+
+                col_commerce, col_bureau = st.columns(2)
+                with col_commerce:
+                    st.metric("Commerces", get("nb_commerces", code_insee, perimetre),)
+                with col_bureau:
+                    st.metric("Locaux de bureau", get("nb_bureaux", code_insee, perimetre),)
+                
+                st.metric("Autres locaux d'activité", get("nb_act_autres", code_insee, perimetre),)
+
+        st.header("Estimation des biens")
+
+        with st.spinner("Chargement..."):
+            st.subheader("Estimation des logements")
+            col_estim, col_mai, col_apt, col_loyer = st.columns(4, gap="large")
+            with col_estim:
+                st.metric("Ensemble des logements",get("estim_logt", code_insee, perimetre) + " €")
+            with col_mai:
+                st.metric("Maisons",get("estim_maisons", code_insee, perimetre) + " €",)
+            with col_apt:
+                st.metric("Appartements",get("estim_appts", code_insee, perimetre) + " €",)
+            with col_loyer:
+                st.metric("Estimation des loyers percus",get("estim_loyer", code_insee, perimetre) + " €/mois",)
+
+            st.plotly_chart(graphe_estimation_logement_taille(code_insee, perimetre), use_container_width=True)
+
+            st.subheader("Estimation des locaux d'activité")
+            col_estim_bureau, col_estim_commerce = st.columns(2, gap="large")
+            with col_estim_bureau:
+                st.metric("Bureaux", get("estimation_bureaux", code_insee, perimetre) + " €",)
+            with col_estim_commerce:
+                st.metric("Commerces", get("estimation_commerces", code_insee, perimetre) + " €",)
