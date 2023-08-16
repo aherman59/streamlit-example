@@ -687,7 +687,7 @@ if check_password():
         with col_com:
             col_comm, col_check = st.columns([0.6, 0.4])
             with col_check:
-                littoral = st.checkbox("Loi littorale uniquement", value=True)
+                littoral = st.checkbox("Riveraines mers et océans", value=True)
             with col_comm:
                 communes = get_communes(coddep, perimetre, littoral)
                 commune = st.selectbox(
