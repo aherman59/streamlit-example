@@ -652,7 +652,7 @@ if check_password():
             with col_loyer_dep:
                 st.metric(
                     "Estimation des loyers percus",
-                    get("estim_loyer", code_dep, perimetre, "iddep") + " €/mois",
+                    get("estim_loyer_loue", code_dep, perimetre, "iddep") + " €/mois",
                 )
 
             st.plotly_chart(
@@ -816,7 +816,7 @@ if check_password():
             with col_loyer:
                 st.metric(
                     "Estimation des loyers percus",
-                    get("estim_loyer", code_insee, perimetre) + " €/mois",
+                    get("estim_loyer_loue", code_insee, perimetre) + " €/mois",
                 )
 
             st.plotly_chart(
