@@ -57,11 +57,15 @@ def data_dep(perimetre):
 def get_val(value, code, perimetre, id="idcom"):
     df = data(perimetre) if id == "idcom" else data_dep(perimetre)
     valeur = df[df[id] == code][value].values[0]
+    if valeur < 11:
+        return None
     return int(valeur) if valeur.is_integer() else valeur
 
 
 def get(value, code, perimetre, id="idcom"):
     valeur = get_val(value, code, perimetre, id=id)
+    if valeur is None:
+        return "< 11"
     return f"{valeur:,}".replace(",", " ")
 
 
