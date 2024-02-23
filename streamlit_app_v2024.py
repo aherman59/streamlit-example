@@ -429,8 +429,8 @@ def style_by_indicator(indicator, perimetre):
         val = feature["properties"][indicator]
         return {
             "fillColor": colormap(val) if val > 0 else "lightgray",
-            "fillOpacity": 0.9 if val > 0 else 0.4,
-            "weight": 1,
+            "fillOpacity": 0.9 if val > 0 else 0,
+            "weight": 1 if val > 0 else 0,
             "color": "gray",
         }
 
@@ -459,23 +459,30 @@ def get_perimetre(code_insee):
 
 @st.cache_data
 def get_perimetre_departements(perimetre):
-    url = f"https://static.data.gouv.fr/resources/carte-des-departements-2-1/20191202-212236/contour-des-departements.geojson"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
+    # url = f"https://static.data.gouv.fr/resources/carte-des-departements-2-1/20191202-212236/contour-des-departements.geojson"
+    # response = requests.get(url)
+    # if response.status_code == 200:
+    #    data = response.json()
+    with open("departement.geojson", encoding="utf-8") as dep:
+        data = json.load(dep)
 
-        df = data_dep(perimetre)
-        for feature in data["features"]:
-            code_dep = feature["properties"]["code"]
-            results = df[df.iddep == code_dep]
-            if not results.empty:
-                for ind in INDICATEURS_SYNTHESE:
-                    feature["properties"][ind] = int(results[ind].values[0])
-            else:
-                for ind in INDICATEURS_SYNTHESE:
-                    feature["properties"][ind] = 0
-        return data
-    return None
+    df = data_dep(perimetre)
+    for feature in data["features"]:
+        code_dep = feature["properties"]["code"]
+        results = df[df.iddep == code_dep]
+        if not results.empty:
+            for ind in INDICATEURS_SYNTHESE:
+                feature["properties"][ind] = int(results[ind].values[0])
+        else:
+            for ind in INDICATEURS_SYNTHESE:
+                feature["properties"][ind] = 0
+
+    data["features"] = [
+        elt for elt in data["features"] if elt["properties"]["nb_logt"] != 0
+    ]
+    # with open("tmp.geojson", "w") as f:
+    #    f.write(json.dumps(data))
+    return data
 
 
 ######
@@ -485,7 +492,7 @@ def get_perimetre_departements(perimetre):
 ######
 
 st.set_page_config(
-    page_title="Enjeux littoraux",
+    page_title="Connaissance des marchés littoraux",
     page_icon=None,
     layout="wide",
 )
@@ -523,11 +530,12 @@ if check_password():
         "Choix de la distance au littoral (limite terre-mer)", perimetres
     )
 
-    tab_dep, tab_synthese, tab_aav = st.tabs(
+    tab_dep, tab_synthese, tab_aav, tab_credit = st.tabs(
         [
             "Indicateurs par département",
             "Synthèse - départements littoraux",
-            "Synthèse - AAV littoraux",
+            "Synthèse - AAV littorale",
+            "A propos",
         ]
     )
 
@@ -800,3 +808,30 @@ if check_password():
             cl.add_to(m)
 
             map = st_folium(m, height=700, use_container_width=True)
+
+    with tab_credit:
+
+        st.markdown(
+            """
+### Méthodologie
+                    
+Cet outil de data-visualisation a été réalisé dans le cadre d'une étude sur la connaissance du littoral par le Cerema pour le compte de la DGALN.
+                    
+Les éléments méthodologiques liés à ces données sont accessibles dans le rapport d'étude : [lien à venir](https://www.cerema.fr)
+
+### Données
+
+DGFiP/DGALN/Cerema - IGN
+
+### Date de réalisation
+                    
+Février 2024
+
+### Partenaires 
+"""
+        )
+        col_mte, col_cerema, cola, colb, colc = st.columns(5, gap="small")
+        with col_cerema:
+            st.image("img/logo_cerema.png", width=300)
+        with col_mte:
+            st.image("img/logo_mte.png", width=220)
